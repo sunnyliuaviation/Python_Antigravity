@@ -1,0 +1,37 @@
+name: Send XKCD Comic Email
+
+on:
+  schedule:
+    # This cron expression means the script runs at 00:00 UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch:  
+
+jobs:
+  send_comic_email:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11.8'  
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run the Python script
+      env:
+        EMAIL_ADDRESS: ${{ secrets.EMAIL_ADDRESS }}
+        EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+        RECIPIENT_EMAILS: ${{ secrets.RECIPIENT_EMAILS }}
+      run: |
+        python Random_xkcd_Comic.py  
+
+    - name: Clean up
+      run: |
+        rm -rf __pycache__  
