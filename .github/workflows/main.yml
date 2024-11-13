@@ -2,14 +2,12 @@ name: Send XKCD Comic Email
 
 on:
   schedule:
-    - cron: '10 3 * * *'
+    - cron: '0 23 * * *'
   workflow_dispatch:  
 
 jobs:
   send_comic_email:
     runs-on: ubuntu-latest
-    env:
-      DISABLE_RUNNER_UPDATE: true
     
     steps:
     - name: Checkout repository
