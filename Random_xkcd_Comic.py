@@ -1,52 +1,65 @@
 import smtplib
 import random
 import os
+import requests
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.image import MIMEImage
 
-# Get your email credentials from GitHub secrets
-EMAIL_ADDRESS = os.getenv('EMAIL_ADDRESS')  # Access from environment variables
-EMAIL_PASSWORD = os.getenv('EMAIL_PASSWORD')  # Access from environment variables
-RECIPIENT_EMAILS = os.getenv('RECIPIENT_EMAILS').split(',')  # Parse the list of recipients from a comma-separated string
+# Get your email credentials from GitHub secrets (環境變數)
+EMAIL_ADDRESS = os.getenv('EMAIL_ADDRESS')
+EMAIL_PASSWORD = os.getenv('EMAIL_PASSWORD')
+RECIPIENT_EMAILS = os.getenv('RECIPIENT_EMAILS').split(',')
 
-# Function to generate a random xkcd comic URL
-def get_random_xkcd_url():
-    # Get a random comic number between 1 and 3009
-    comic_number = random.randint(1, 3010)
-    comic_url = f'https://xkcd.com/{comic_number}/'
-    print(f"Generated comic URL: {comic_url}")  # Debugging line to show the URL
-    return comic_url
+# Function to get random XKCD comic info from JSON API
+def get_random_xkcd():
+    latest = requests.get("https://xkcd.com/info.0.json").json()["num"]
+    comic_number = random.randint(1, latest)
+    comic_api = f"https://xkcd.com/{comic_number}/info.0.json"
+    comic = requests.get(comic_api).json()
+    return comic
 
-# Function to send the comic URL via email to multiple recipients using To
-def send_comic_url_email(comic_url):
-    # Create the email message
+# Function to send comic via email
+def send_comic_email(comic):
+    # Download image
+    img_data = requests.get(comic["img"]).content
+
+    # Create email
     msg = MIMEMultipart()
     msg['From'] = EMAIL_ADDRESS
-    msg['Subject'] = "[Today's Random XKCD Comic URL]早八看漫畫"
-    
-    # Add the URL in the body of the email
-    body = f"Here is your random XKCD comic URL for today: {comic_url}"
-    msg.attach(MIMEText(body, 'plain'))
+    msg['To'] = ', '.join(RECIPIENT_EMAILS)
+    msg['Subject'] = f"[Today's Random XKCD] 早八看漫畫 - {comic['safe_title']} (#{comic['num']})"
 
-    # Add Bcc field for all recipient emails
-    msg['To'] = ', '.join(RECIPIENT_EMAILS)  # Bcc all recipients
+    # HTML body with inline image
+    body = f"""
+    <h2>{comic['safe_title']}</h2>
+    <p><i>{comic['alt']}</i></p>
+    <p><a href="https://xkcd.com/{comic['num']}/">原始連結</a></p>
+    <br>
+    <img src="cid:comic_image">
+    """
+    msg.attach(MIMEText(body, 'html'))
 
-    # Send the email to all recipients using Gmail's SMTP server
+    # Attach image as inline
+    image = MIMEImage(img_data, name=f"xkcd_{comic['num']}.png")
+    image.add_header('Content-ID', '<comic_image>')
+    msg.attach(image)
+
+    # Send email
     try:
-        print("Attempting to send email...")  # Debugging line
+        print("Attempting to send email...")
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
             server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
             server.sendmail(EMAIL_ADDRESS, RECIPIENT_EMAILS, msg.as_string())
-            print(f"Comic URL '{comic_url}' sent to {', '.join(RECIPIENT_EMAILS)}")
+            print(f"✅ XKCD #{comic['num']} - '{comic['safe_title']}' 已寄出給 {', '.join(RECIPIENT_EMAILS)}")
     except Exception as e:
-        print(f"Error sending email: {e}")
+        print(f"❌ Error sending email: {e}")
 
-# Main function to execute the process
+# Main
 def main():
-    print("Fetching random XKCD comic URL...")
-    comic_url = get_random_xkcd_url()  # Get a random comic URL
-    send_comic_url_email(comic_url)    # Send the URL to your email
+    print("Fetching random XKCD comic...")
+    comic = get_random_xkcd()
+    send_comic_email(comic)
 
-# Run the main function immediately
 if __name__ == "__main__":
     main()
