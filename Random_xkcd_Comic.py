@@ -6,7 +6,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.image import MIMEImage
 
-# Get your email credentials from GitHub secrets (環境變數)
+# Get your email credentials from environment variables
 EMAIL_ADDRESS = os.getenv('EMAIL_ADDRESS')
 EMAIL_PASSWORD = os.getenv('EMAIL_PASSWORD')
 RECIPIENT_EMAILS = os.getenv('RECIPIENT_EMAILS').split(',')
@@ -28,15 +28,16 @@ def send_comic_email(comic):
     msg = MIMEMultipart()
     msg['From'] = EMAIL_ADDRESS
     msg['To'] = ', '.join(RECIPIENT_EMAILS)
-    msg['Subject'] = f"[Today's Random XKCD] 早八看漫畫 - {comic['safe_title']} (#{comic['num']})"
+    msg['Subject'] = f"Good Morning! Start your day with an XKCD comic - {comic['safe_title']} (#{comic['num']})"
 
-    # HTML body with inline image
+    # HTML body: 標題 + alt文字 + 圖片 + URL
+    comic_url = f"https://xkcd.com/{comic['num']}/"
     body = f"""
     <h2>{comic['safe_title']}</h2>
     <p><i>{comic['alt']}</i></p>
-    <p><a href="https://xkcd.com/{comic['num']}/">原始連結</a></p>
     <br>
-    <img src="cid:comic_image">
+    <img src="cid:comic_image"><br>
+    <p>{comic_url}</p>
     """
     msg.attach(MIMEText(body, 'html'))
 
