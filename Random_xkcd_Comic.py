@@ -6,12 +6,10 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.image import MIMEImage
 
-# Get your email credentials from environment variables
 EMAIL_ADDRESS = os.getenv('EMAIL_ADDRESS')
 EMAIL_PASSWORD = os.getenv('EMAIL_PASSWORD')
 RECIPIENT_EMAILS = os.getenv('RECIPIENT_EMAILS').split(',')
 
-# Function to get random XKCD comic info from JSON API
 def get_random_xkcd():
     latest = requests.get("https://xkcd.com/info.0.json").json()["num"]
     comic_number = random.randint(1, latest)
@@ -19,7 +17,6 @@ def get_random_xkcd():
     comic = requests.get(comic_api).json()
     return comic
 
-# Function to send comic via email
 def send_comic_email(comic):
     # Download image
     img_data = requests.get(comic["img"]).content
@@ -41,7 +38,6 @@ def send_comic_email(comic):
     """
     msg.attach(MIMEText(body, 'html'))
 
-    # Attach image as inline
     image = MIMEImage(img_data, name=f"xkcd_{comic['num']}.png")
     image.add_header('Content-ID', '<comic_image>')
     msg.attach(image)
